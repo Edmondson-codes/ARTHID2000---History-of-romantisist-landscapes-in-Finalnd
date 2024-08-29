@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from keras import Sequential
-from keras.src.layers import Conv2D, BatchNormalization, Dropout, Dense, Flatten, MaxPooling2D
+from keras.src.layers import Conv2D, BatchNormalization, Dropout, Dense, Flatten, MaxPooling2D, preprocessing
 from keras.src.legacy.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.model_selection import train_test_split
@@ -39,7 +39,13 @@ classes, counts = np.unique(y_train, return_counts=True)
 plt.barh(lbls, counts)
 plt.title('Class distribution in training set')
 
-# PrePRocessing
+plt.show()
+
+# PreProcessing
+norm = keras.layers.RandomCrop(200, 200, 4)
+
+X_train = norm.call(X_train)
+y_train = norm.call(y_train)
 
 ## data normalisation
 # scale the image data between 1 and 0 to make it uniform and easier for the neral network to learn
@@ -56,11 +62,15 @@ X_TRAIN, X_VAL, Y_TRAIN, Y_VAL = train_test_split(X_train,
                                                 test_size=0.2,
                                                 random_state=42)
 
+
+
 ## Data augmentation
 batch_size = 64
 data_generator = ImageDataGenerator(horizontal_flip=True)
 
-train_generator = data_generator.flow(X_TRAIN, Y_TRAIN, batch_size)
+train_generator = data_generator.flow(X_TRAIN, Y_TRAIN, batch_size).shuffle()  # Added shuffle
+
+
 
 
 # Model
@@ -96,7 +106,7 @@ model.compile(loss='categorical_crossentropy',
               )
 
 history = model.fit(train_generator,
-                    epochs=6,
+                    epochs=1,
                     validation_data=(X_VAL, Y_VAL),
                     )
 
