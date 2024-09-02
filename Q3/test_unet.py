@@ -1,7 +1,6 @@
 import torch
-import torch.nn
+import torch.nn as nn
 import torch.nn.functional as F
-
 
 '''
 Network Summary: https://medium.com/analytics-vidhya/what-is-unet-157314c87634
@@ -29,18 +28,41 @@ Useful:
 '''
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super.__init__()
+    def __init__(self, in_pixels, out_pixels, middle_pixels, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.conv_block = nn.Sequential(
-            nn.conv2d(in_channels, out_channels)
-            nn.relu()
-            nn.conv2d()
-            nn.relu()
+            nn.Conv2d(in_pixels, middle_pixels, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(middle_pixels, out_pixels, kernel_size=3, padding=1),
+            nn.ReLU(),
         )
+    def forward(self, x):
+        return self.conv_block(x)
 
 class Encode(nn.Module):
+    def __init__(self, in_pixels, out_pixels):
+        super().__init__()
+
+        self.pool = nn.MaxPool2d(kernel_size=2),
+        self.conv_block = ConvBlock(in_pixels, out_pixels, out_pixels)
+
+
     pass
 
 class Decode(nn.Module):
-    pass
+    def __init__(self, in_pixels, out_pixels):
+        super().__init__()
+
+        self.conv_transpose = nn.ConvTranspose2d(in_pixels, in_pixels // 2, kernel_size=2, stride=2)
+        self.conv_block = ConvBlock(in_pixels, out_pixels, out_pixels)
+
+
+    def forward(self, x, skip):
+        x = self.conv_transpose(x)
+
+        x_merged = torch.cat([skip, x])
+
+        return self.conv_block(x_merged)
+
 
