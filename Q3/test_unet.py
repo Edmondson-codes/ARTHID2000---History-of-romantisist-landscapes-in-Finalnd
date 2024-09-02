@@ -37,8 +37,10 @@ class ConvBlock(nn.Module):
             nn.Conv2d(middle_pixels, out_pixels, kernel_size=3, padding=1),
             nn.ReLU(),
         )
+
     def forward(self, x):
         return self.conv_block(x)
+
 
 class Encode(nn.Module):
     def __init__(self, in_pixels, out_pixels):
@@ -48,7 +50,6 @@ class Encode(nn.Module):
             nn.MaxPool2d(kernel_size=2),
             ConvBlock(in_pixels, out_pixels, out_pixels)
         )
-
 
     def forward(self, x):
         return self.pool_and_conv(x)
@@ -61,8 +62,8 @@ class Decode(nn.Module):
         self.conv_transpose = nn.ConvTranspose2d(in_pixels, in_pixels // 2, kernel_size=2, stride=2)
         self.conv_block = ConvBlock(in_pixels, out_pixels, out_pixels)
 
-
     def forward(self, x, skip):
+        # Upscale  Note: replace with Upscale?
         x = self.conv_transpose(x)
 
         x_merged = torch.cat([skip, x])
