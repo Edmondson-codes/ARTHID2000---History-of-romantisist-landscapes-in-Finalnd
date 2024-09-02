@@ -44,11 +44,15 @@ class Encode(nn.Module):
     def __init__(self, in_pixels, out_pixels):
         super().__init__()
 
-        self.pool = nn.MaxPool2d(kernel_size=2),
-        self.conv_block = ConvBlock(in_pixels, out_pixels, out_pixels)
+        self.pool_and_conv = nn.Sequential(
+            nn.MaxPool2d(kernel_size=2),
+            ConvBlock(in_pixels, out_pixels, out_pixels)
+        )
 
 
-    pass
+    def forward(self, x):
+        return self.pool_and_conv(x)
+
 
 class Decode(nn.Module):
     def __init__(self, in_pixels, out_pixels):
