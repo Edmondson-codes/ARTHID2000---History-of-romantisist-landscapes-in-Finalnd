@@ -59,12 +59,21 @@ class Decode(nn.Module):
     def __init__(self, in_pixels, out_pixels):
         super().__init__()
 
-        self.conv_transpose = nn.ConvTranspose2d(in_pixels, in_pixels // 2, kernel_size=2, stride=2)
+        self.upsamp = nn.Upsample(2)
         self.conv_block = ConvBlock(in_pixels, out_pixels, out_pixels)
 
     def forward(self, x, skip):
         # Upscale the input from previous layer.   Note: replace with Upscale?
-        x = self.conv_transpose(x)
+        # print(f"x: {x.size()}")
+        x = self.upsamp(x)
+
+        # Pad x as not right size
+        diff_x = skip.size()[2] - x.size()[2]
+        diff_y = skip.size()[3] - x.size()[3]
+
+        x = F.pad(x, [diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2])
+
+        # print(f"x: {x.size()}, skip: {skip.size()}")
 
         x_merged = torch.cat([skip, x])
 
@@ -95,12 +104,12 @@ class UNet(nn.Module):
         self.encode1 = Encode(64, 128)
         self.encode2 = Encode(128, 256)
         self.encode3 = Encode(256, 512)
-        self.bridge = Encode(512, 1024)
-        self.decode1 = Decode(1024, 512)
-        self.decode2 = Decode(512, 256)
-        self.decode3 = Decode(256, 128)
-        self.decode4 = Decode(128, 64)
-        self.out = OutConv(64, num_classes)
+        self.bridge = Encode(512, 1024//2)
+        self.decode1 = Decode(1024//2, 512//2)
+        self.decode2 = Decode(512//2, 256//2)
+        self.decode3 = Decode(256//2, 128//2)
+        self.decode4 = Decode(128//2, 64//2)
+        self.out = OutConv(64//2, num_classes)
 
     def forward(self, x):
         x1 = self.first(x)
