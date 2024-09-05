@@ -9,10 +9,10 @@ from torchvision.io import read_image
 import os
 import matplotlib.pyplot as plt
 
-from Q2.DAWNBench import batch_size
+# from Q2.DAWNBench import batch_size
 from unet_model import UNet
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 # class CustomImageDataset(Dataset):
@@ -74,7 +74,7 @@ data_iter = iter(testloader)
 unet = UNet(3, 1)
 # unet.to(device)
 
-criterion = nn.CrossEntropyLoss(batch_size=160)
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(unet.parameters(), lr=0.001)
 
 for epoch in range(2):  # loop over the dataset multiple times
