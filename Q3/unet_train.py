@@ -8,9 +8,11 @@ import pandas as pd
 from torchvision.io import read_image
 import os
 import matplotlib.pyplot as plt
+
+from Q2.DAWNBench import batch_size
 from unet_model import UNet
 
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 # class CustomImageDataset(Dataset):
@@ -55,8 +57,8 @@ test_transforms = transforms.Compose([transforms.RandomRotation(30),
 train_data = datasets.ImageFolder(data_dir + '/train', transform=train_transforms)
 test_data = datasets.ImageFolder(data_dir + '/test', transform=test_transforms)
 
-trainloader = torch.utils.data.DataLoader(train_data, batch_size=32)
-testloader = torch.utils.data.DataLoader(test_data, batch_size=32)
+trainloader = torch.utils.data.DataLoader(train_data, batch_size=160)
+testloader = torch.utils.data.DataLoader(test_data, batch_size=160)
 
 
 # change this to the trainloader or testloader
@@ -70,23 +72,25 @@ data_iter = iter(testloader)
 #     plt.imshow(images[ii], ax=ax, normalize=False)
 
 unet = UNet(3, 1)
+# unet.to(device)
 
-criterion = nn.CrossEntropyLoss()
+criterion = nn.CrossEntropyLoss(batch_size=160)
 optimizer = optim.Adam(unet.parameters(), lr=0.001)
 
 for epoch in range(2):  # loop over the dataset multiple times
 
     running_loss = 0.0
-    for i, data in enumerate(trainloader, 0):
+    for i, data in enumerate(trainloader):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
 
-        # zero the parameter gradients
-        optimizer.zero_grad()
+
 
         # forward + backward + optimize
         outputs = unet(inputs)
         loss = criterion(outputs, labels)
+        # zero the parameter gradients
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
@@ -99,6 +103,64 @@ for epoch in range(2):  # loop over the dataset multiple times
 print('Finished Training')
 
 
+'''
+model = ConvNetwork(depth, channels, num_classes=10)
+model = model.to(device)
+
+criterion = nn.CrossEntropyLoss()
+total_step = len(train_loader)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+
+model.train()
+print("> Training")
+start = time.time() #time generation
+for epoch in range(num_epochs):
+    for i, (images, labels) in enumerate(train_loader):
+        images = images.to(device)
+        labels = labels.to(device)
+
+        # Forward pass
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+
+        # Backward and optimize
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if (i+1) % 100 == 0:
+            print ("Epoch [{}/{}], Step [{}/{}] Loss: {:.5f}"
+                    .format(epoch+1, num_epochs, i+1, total_step, loss.item()))
+
+end = time.time()
+elapsed = end - start
+print("Training took " + str(elapsed) + " secs or " + str(elapsed/60) + " mins in total")
+
+
+
+# Test the model
+print("> Testing")
+start = time.time() #time generation
+model.eval()
+with torch.no_grad():
+    correct = 0
+    total = 0
+    for images, labels in test_loader:
+        images = images.to(device)
+        labels = labels.to(device)
+
+        outputs = model(images)
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+    print('Test Accuracy: {} %'.format(100 * correct / total))
+
+end = time.time()
+elapsed = end - start
+print("Training took " + str(elapsed) + " secs or " + str(elapsed/60) + " mins in total")
+'''
 
 
 '''
