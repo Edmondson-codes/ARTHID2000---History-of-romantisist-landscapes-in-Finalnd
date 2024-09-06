@@ -6,6 +6,12 @@ from keras.src.legacy.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.model_selection import train_test_split
 import keras
+# from keras import backend as K
+import tensorflow as tf
+
+# K.tensorflow_backend._get_available_gpus()
+sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
+
 
 (X_train, y_train), (X_test, y_test) = keras.datasets.cifar10.load_data()
 
@@ -42,7 +48,7 @@ plt.title('Class distribution in training set')
 plt.show()
 
 # PreProcessing
-norm = keras.layers.RandomCrop(200, 200, 4)
+norm = keras.layers.RandomCrop(220, 220, 4)
 
 X_train = norm.call(X_train)
 y_train = norm.call(y_train)
