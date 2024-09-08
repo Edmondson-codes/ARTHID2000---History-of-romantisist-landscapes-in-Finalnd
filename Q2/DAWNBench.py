@@ -64,7 +64,7 @@ X_TRAIN, X_VAL, Y_TRAIN, Y_VAL = train_test_split(X_train,
 
 
 
-## Data augmentation
+## Data
 batch_size = 64
 data_generator = ImageDataGenerator(horizontal_flip=True)
 

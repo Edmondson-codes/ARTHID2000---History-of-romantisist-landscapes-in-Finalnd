@@ -84,8 +84,6 @@ for epoch in range(2):  # loop over the dataset multiple times
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
 
-
-
         # forward + backward + optimize
         outputs = unet(inputs)
         loss = criterion(outputs, labels)

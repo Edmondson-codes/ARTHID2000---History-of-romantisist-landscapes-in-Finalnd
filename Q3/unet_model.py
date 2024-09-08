@@ -122,7 +122,7 @@ class UNet(nn.Module):
         x = self.decode1(x5, x4)
         x = self.decode2(x, x3)
         x = self.decode3(x, x2)
-        # x = self.decode4(x, x1)
+        x = self.decode4(x, x1)
         out = self.out(x)
         print('iteration end')
         return out
