@@ -103,9 +103,7 @@ def unet_model(input_size=(128*FULL_SIZE_IMG, 128*FULL_SIZE_IMG, 1)):
 
     model = models.Model(inputs=[inputs], outputs=[outputs])
     model.summary()
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-    # TODO: make output onehot using sparse_categorical_crossentropy
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     return model
 
@@ -137,14 +135,17 @@ else:
 # ============== Test Model ==============
 
 
-# loss, accuracy = model.evaluate(test_images, test_masks)
+loss, accuracy = model.evaluate(test_images, test_masks)
+
+print(f"Loss: {loss}")
+print(f"Accuracy: {accuracy}")
+
 
 predictions = model.predict(test_images)
 
-# print(f"Loss: {loss}")
-# print(f"Accuracy: {accuracy}")
+print(f"Predictions: {np.argmax(predictions, axis=-1)}")
 
-
+# Plot Predictions
 fig, axes = plt.subplots(5,5, figsize = (10,10))
 axes = axes.ravel()
 for i in np.arange(0, 5*5):
