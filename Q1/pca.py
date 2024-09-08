@@ -60,9 +60,9 @@ def plot_gallery(images, titles, h, w, n_row=3, n_col=4):
         plt.title(titles[i], size=12)
         plt.xticks(())
         plt.yticks(())
-    eigenface_titles = ["eigenface %d" % i for i in range(eigenfaces.shape[0])]
-    plot_gallery(eigenfaces, eigenface_titles, h, w)
-    plt.show()
+eigenface_titles = ["eigenface %d" % i for i in range(eigenfaces.shape[0])]
+plot_gallery(eigenfaces, eigenface_titles, h, w)
+plt.show()
 
 
 explained_variance = (S ** 2) / (n_samples - 1)
