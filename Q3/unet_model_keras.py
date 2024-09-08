@@ -103,7 +103,7 @@ def unet_model(input_size=(128*FULL_SIZE_IMG, 128*FULL_SIZE_IMG, 1)):
 
     model = models.Model(inputs=[inputs], outputs=[outputs])
     model.summary()
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
     return model
 
@@ -151,7 +151,6 @@ axes = axes.ravel()
 for i in np.arange(0, 5*5):
     idx = np.random.randint(0, len(predictions))
     img = predictions[idx,1:]
-    print(f"Image {i} - min: {img.min()}, max: {img.max()}")
     img_rescaled = minmax_scale(img.ravel(), feature_range=(0, 100)).reshape(img.shape)  # Make images more visable
     axes[i].imshow(img_rescaled, cmap='Blues', vmin=0, vmax=150)
     axes[i].axis('off')
