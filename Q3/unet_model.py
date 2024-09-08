@@ -33,9 +33,9 @@ class ConvBlock(nn.Module):
 
         self.conv_block = nn.Sequential(
             nn.Conv2d(in_pixels, middle_pixels, kernel_size=3, padding=1),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Conv2d(middle_pixels, out_pixels, kernel_size=3, padding=1),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
@@ -59,23 +59,24 @@ class Decode(nn.Module):
     def __init__(self, in_pixels, out_pixels):
         super().__init__()
 
-        self.upsamp = nn.Upsample(2)
+        self.upsamp = nn.Upsample(2, mode='bilinear', align_corners=False)
         self.conv_block = ConvBlock(in_pixels, out_pixels, out_pixels)
 
     def forward(self, x, skip):
-        # Upscale the input from previous layer.   Note: replace with Upscale?
-        # print(f"x: {x.size()}")
+        print(f"x before upsampling: {x.size()}")
         x = self.upsamp(x)
+        print(f"x after upsampling: {x.size()}")
 
-        # Pad x as not right size
+        # Calculate padding needed
         diff_x = skip.size()[2] - x.size()[2]
         diff_y = skip.size()[3] - x.size()[3]
+        print(f"Padding to be applied: {[diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2]}")
 
         x = F.pad(x, [diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2])
+        print(f"x after padding: {x.size()}")
 
-        # print(f"x: {x.size()}, skip: {skip.size()}")
-
-        x_merged = torch.cat([skip, x])
+        x_merged = torch.cat([skip, x], dim=1)
+        print(f"x_merged after concatenation: {x_merged.size()}")
 
         return self.conv_block(x_merged)
 
@@ -86,7 +87,7 @@ class OutConv(nn.Module):
 
         self.out_conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 1),
-            nn.Sigmoid()
+            # nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -94,13 +95,13 @@ class OutConv(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, num_pixels, num_classes):
+    def __init__(self, num_channels, num_classes):
         super().__init__()
 
-        self.num_pixels = num_pixels
+        self.num_channels = num_channels
         self.num_classes = num_classes
 
-        self.first = ConvBlock(num_pixels, 64, 64)
+        self.first = ConvBlock(num_channels, 64, 64)
         self.encode1 = Encode(64, 128)
         self.encode2 = Encode(128, 256)
         self.encode3 = Encode(256, 512)

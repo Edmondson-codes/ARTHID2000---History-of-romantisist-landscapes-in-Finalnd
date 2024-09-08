@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from tensorflow.python.keras.utils.np_utils import to_categorical
 from torch.utils.data import Dataset
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -83,9 +84,14 @@ for epoch in range(2):  # loop over the dataset multiple times
     for i, data in enumerate(trainloader):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
+        # labels = to_categorical(labels, 4)  # CHANGE
+
+        # print(inputs.size())
+        # print(labels.size())
 
         # forward + backward + optimize
         outputs = unet(inputs)
+        print(outputs.size())   # change
         loss = criterion(outputs, labels)
         # zero the parameter gradients
         optimizer.zero_grad()
