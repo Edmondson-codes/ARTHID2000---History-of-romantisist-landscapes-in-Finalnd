@@ -8,6 +8,7 @@ import numpy as np
 import os
 import keras
 import tensorflow as tf
+from sklearn.preprocessing import minmax_scale
 from tensorflow.python.keras import backend as K
 import matplotlib.pyplot as plt
 from keras import layers, models
@@ -113,7 +114,7 @@ model = unet_model()
 
 # ============== Train or Load Model ==============
 
-if os.path.isfile('models/unet_model_keras_128_res.h5') is True:
+if os.path.isfile('models/unet_model_keras_128_res.h5') is False:
     print('Training Model')
     # Train
     history = model.fit(
@@ -136,18 +137,22 @@ else:
 
 loss, accuracy = model.evaluate(test_images, test_masks)
 
-predictions = model.predict(test_images)
-
 print(f"Loss: {loss}")
 print(f"Accuracy: {accuracy}")
 
+
+predictions = model.predict(test_images)
+
+print(f"Predictions: {np.argmax(predictions, axis=-1)}")
+
+# Plot Predictions
 fig, axes = plt.subplots(5,5, figsize = (10,10))
 axes = axes.ravel()
 for i in np.arange(0, 5*5):
     idx = np.random.randint(0, len(predictions))
-    axes[i].imshow(predictions[idx,1:])
-    lbl_idx = int(predictions[idx])
-    axes[i].set_title(predictions[lbl_idx], fontsize = 8)
+    img = predictions[idx,1:]
+    img_rescaled = minmax_scale(img.ravel(), feature_range=(0, 100)).reshape(img.shape)  # Make images more visable
+    axes[i].imshow(img_rescaled, cmap='Blues', vmin=0, vmax=150)
     axes[i].axis('off')
 
 plt.subplots_adjust(hspace=0.4)
