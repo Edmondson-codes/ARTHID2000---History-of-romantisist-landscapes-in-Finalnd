@@ -45,20 +45,15 @@ for i in np.arange(0, 5*5):
 
 plt.subplots_adjust(hspace=0.4)
 
-# Check if balanced
-classes, counts = np.unique(y_train, return_counts=True)
-plt.barh(lbls, counts)
-plt.title('Class distribution in training set')
-
-plt.show()
+# plt.show()
 
 
 # ==================== Preprocess Data ====================
 
 # Some nice random cropping
-norm = keras.layers.RandomCrop(220, 220, 4)
-X_train = norm.call(X_train)
-y_train = norm.call(y_train)
+# norm = keras.layers.RandomCrop(220, 220, 4)
+# X_train = norm.call(X_train)
+# y_train = norm.call(y_train)
 
 ## data normalisation
 # scale the image data between 1 and 0 to make it uniform and easier for the neral network to learn
@@ -71,11 +66,11 @@ y_test_cat = keras.utils.to_categorical(y_test, 10)
 
 ## Training / validation
 X_TRAIN, X_VAL, Y_TRAIN, Y_VAL = train_test_split(X_train, y_train_cat,
-                                                test_size=0.2, random_state=42)
+                                                test_size=0.2, random_state=42, shuffle=True)
 
 # create generator
 data_generator = ImageDataGenerator(horizontal_flip=True)
-train_generator = data_generator.flow(X_TRAIN, Y_TRAIN, batch_size).shuffle()  # Added shuffle
+train_generator = data_generator.flow(X_TRAIN, Y_TRAIN, batch_size)  # Added shuffle
 
 
 # ==================== Model ====================
@@ -83,20 +78,26 @@ train_generator = data_generator.flow(X_TRAIN, Y_TRAIN, batch_size).shuffle()  #
 model = Sequential()
 model.add(Conv2D(filters=16, kernel_size=(3, 3), input_shape=INPUT_SHAPE, activation='relu', padding='same'))
 model.add(BatchNormalization())
-model.add(Conv2D(filters=16, kernel_size=(3, 3), input_shape=INPUT_SHAPE, activation='relu', padding='same'))
+model.add(Conv2D(filters=16, kernel_size=(3, 3), activation='relu', padding='same'))
 model.add(BatchNormalization())
 
 model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+# model.add(Dropout(0.25))
 
-model.add(Conv2D(filters=32, kernel_size=(3, 3), input_shape=INPUT_SHAPE, activation='relu', padding='same'))
+model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', padding='same'))
 model.add(BatchNormalization())
-model.add(Conv2D(filters=32, kernel_size=(3, 3), input_shape=INPUT_SHAPE, activation='relu', padding='same'))
+model.add(Conv2D(filters=32, kernel_size=(3, 3), activation='relu', padding='same'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', padding='same'))
+model.add(BatchNormalization())
+model.add(Conv2D(filters=64, kernel_size=(3, 3), activation='relu', padding='same'))
 model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
 model.add(Flatten())
-model.add(Dense(32, activation='relu'))
+model.add(Dense(64, activation='relu'))
 model.add(Dense(10, activation='softmax'))
 
 model.summary()
@@ -109,10 +110,8 @@ model.compile(loss='categorical_crossentropy',
                metrics=['accuracy']
               )
 
-history = model.fit(train_generator,
-                    epochs=1,
-                    validation_data=(X_VAL, Y_VAL),
-                    )
+history = model.fit(train_generator, epochs=6,
+                    validation_data=(X_VAL, Y_VAL))
 
 
 # ==================== Model eval ====================
