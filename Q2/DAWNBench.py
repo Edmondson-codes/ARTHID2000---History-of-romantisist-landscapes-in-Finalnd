@@ -9,25 +9,31 @@ import keras
 # from keras import backend as K
 import tensorflow as tf
 
+# ==================== Use GPU ====================
 # K.tensorflow_backend._get_available_gpus()
-sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
+# sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
 
+# ==================== Vars ====================
+
+batch_size = 64
+INPUT_SHAPE = (32, 32, 3)
+lbls = ['Airplane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog',
+                'Frog', 'Horse', 'Ship', 'Truck']
+
+
+# ==================== Get Data ====================
 
 (X_train, y_train), (X_test, y_test) = keras.datasets.cifar10.load_data()
 
 
-
-# VISULISE DATASET
-
+# ==================== VISUALISE DATASET ====================
 
 print(f"X_train: {X_train.shape}") # 50000, 32, 32, 3
 print(f"y_train: {y_train.shape}") # 50000, 1
 print(f"X_test: {X_test.shape}")   # 10000, 32, 32, 3
 print(f"y_test: {y_test.shape}")   # 10000, 1
 
-lbls = ['Airplane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog',
-                'Frog', 'Horse', 'Ship', 'Truck']
-
+# Plot images
 fig, axes = plt.subplots(5,5, figsize = (10,10))
 axes = axes.ravel()
 for i in np.arange(0, 5*5):
@@ -40,16 +46,17 @@ for i in np.arange(0, 5*5):
 plt.subplots_adjust(hspace=0.4)
 
 # Check if balanced
-
 classes, counts = np.unique(y_train, return_counts=True)
 plt.barh(lbls, counts)
 plt.title('Class distribution in training set')
 
 plt.show()
 
-# PreProcessing
-norm = keras.layers.RandomCrop(220, 220, 4)
 
+# ==================== Preprocess Data ====================
+
+# Some nice random cropping
+norm = keras.layers.RandomCrop(220, 220, 4)
 X_train = norm.call(X_train)
 y_train = norm.call(y_train)
 
@@ -63,25 +70,15 @@ y_train_cat = keras.utils.to_categorical(y_train, 10)
 y_test_cat = keras.utils.to_categorical(y_test, 10)
 
 ## Training / validation
-X_TRAIN, X_VAL, Y_TRAIN, Y_VAL = train_test_split(X_train,
-                                                y_train_cat,
-                                                test_size=0.2,
-                                                random_state=42)
+X_TRAIN, X_VAL, Y_TRAIN, Y_VAL = train_test_split(X_train, y_train_cat,
+                                                test_size=0.2, random_state=42)
 
-
-
-## Data
-batch_size = 64
+# create generator
 data_generator = ImageDataGenerator(horizontal_flip=True)
-
 train_generator = data_generator.flow(X_TRAIN, Y_TRAIN, batch_size).shuffle()  # Added shuffle
 
 
-
-
-# Model
-
-INPUT_SHAPE = (32, 32, 3)
+# ==================== Model ====================
 
 model = Sequential()
 model.add(Conv2D(filters=16, kernel_size=(3, 3), input_shape=INPUT_SHAPE, activation='relu', padding='same'))
@@ -105,7 +102,8 @@ model.add(Dense(10, activation='softmax'))
 model.summary()
 
 
-# Train Model
+# ==================== Train Model ====================
+
 model.compile(loss='categorical_crossentropy',
                optimizer='adam',
                metrics=['accuracy']
@@ -116,7 +114,8 @@ history = model.fit(train_generator,
                     validation_data=(X_VAL, Y_VAL),
                     )
 
-# Model eval
+
+# ==================== Model eval ====================
 
 plt.figure(figsize=(12, 16))
 
