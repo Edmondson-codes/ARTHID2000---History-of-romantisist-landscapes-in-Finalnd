@@ -8,6 +8,7 @@ import numpy as np
 import os
 import keras
 import tensorflow as tf
+from sklearn.metrics import classification_report
 from sklearn.preprocessing import minmax_scale
 from tensorflow.python.keras import backend as K
 import matplotlib.pyplot as plt
@@ -24,7 +25,7 @@ from keras._tf_keras.keras.models import load_model
 
 # ============== Vars ==============
 
-FULL_SIZE_IMG = 1  # set to 2 to use full size image
+FULL_SIZE_IMG = 2  # set to 2 to use full size image
 INPUT_SHAPE = (32, 32, 3)
 num_classes = 4  # numb of classes in segmentation
 
@@ -78,32 +79,70 @@ train_masks = to_categorical(train_masks, num_classes=num_classes)
 test_masks = to_categorical(test_masks, num_classes=num_classes)
 
 
-# ============== Model ==============
+# ============== Support Functions ==============
 
+def recall_m(y_true, y_pred):
+    """The number of TP results divided by everything that should have been identified as positive"""
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
+
+def precision_m(y_true, y_pred):
+    """This is the number of true results divided by the total num of positive results"""
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+def f1_m(y_true, y_pred):
+    """This is the Dice or DSC or F1 Metric"""
+    precision = precision_m(y_true, y_pred)
+    recall = recall_m(y_true, y_pred)
+    return 2*((precision*recall)/(precision+recall+K.epsilon()))
+
+def dice_coef(groundtruth_mask, pred_mask):
+    # Adapted from: https://medium.com/@nghihuynh_37300/understanding-evaluation-metrics-in-medical-image-segmentation-d289a373a3f
+    intersect = K.sum(pred_mask*groundtruth_mask)
+    total_sum = K.sum(pred_mask) + K.sum(groundtruth_mask)
+    dice = K.mean(2*intersect/total_sum)
+    return dice #round up to 3 decimal places
+
+
+# ============== Model ==============
 
 def unet_model(input_size=(128*FULL_SIZE_IMG, 128*FULL_SIZE_IMG, 1)):
     inputs = layers.Input(input_size)
 
     # Encoder
-    conv1 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(inputs)
-    conv1 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(conv1)
-    pool1 = layers.MaxPooling2D(pool_size=(2, 2))(conv1)
+    en_conv1 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(inputs)
+    en_conv1 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(en_conv1)
+    pool1 = layers.MaxPooling2D(pool_size=(2, 2))(en_conv1)
+
+    en_conv2 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(pool1)
+    en_conv2 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(en_conv2)
+    pool2 = layers.MaxPooling2D(pool_size=(2, 2))(en_conv2)
 
     # Bridge
-    conv2 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(pool1)
-    conv2 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(conv2)
+    br_conv1 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(pool2)
+    br_conv1 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(br_conv1)
 
     # Decoder
-    up1 = layers.Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(conv2)
-    concat1 = layers.concatenate([up1, conv1], axis=3)
-    conv3 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(concat1)
-    conv3 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(conv3)
+    up1 = layers.Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(br_conv1)
+    concat1 = layers.concatenate([up1, en_conv2], axis=3)
+    de_conv1 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(concat1)
+    de_conv1 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(de_conv1)
 
-    outputs = layers.Conv2D(4, (1, 1), activation='sigmoid')(conv3)
+    up1 = layers.Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(de_conv1)
+    concat1 = layers.concatenate([up1, en_conv1], axis=3)
+    de_conv1 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(concat1)
+    de_conv1 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(de_conv1)
+
+    outputs = layers.Conv2D(4, (1, 1), activation='sigmoid')(de_conv1)
 
     model = models.Model(inputs=[inputs], outputs=[outputs])
     model.summary()
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy', dice_coef])
 
     return model
 
@@ -111,10 +150,13 @@ def unet_model(input_size=(128*FULL_SIZE_IMG, 128*FULL_SIZE_IMG, 1)):
 model = unet_model()
 
 
+# ============== Train / Load Model ==============
 
-# ============== Train or Load Model ==============
+file_name = 'models/unet_model_keras_128_res_dice_double_depth.h5'
 
-if os.path.isfile('models/unet_model_keras_128_res.h5') is False:
+run_if_file_exists = True
+
+if os.path.isfile(file_name) is run_if_file_exists:
     print('Training Model')
     # Train
     history = model.fit(
@@ -125,25 +167,40 @@ if os.path.isfile('models/unet_model_keras_128_res.h5') is False:
         batch_size=16
     )
 
-    model.save('models/unet_model_keras_128_res.h5')
+    model.save(file_name)
 
 else:
     print("Loading Model")
-    model = load_model('models/unet_model_keras_128_res.h5')
+    try:
+        model = load_model(file_name)
+    except Exception as e:
+        print(f"Couldn't find model to load. Full error:\n{e}" )
 
 
 # ============== Test Model ==============
 
 
-loss, accuracy = model.evaluate(test_images, test_masks)
+loss, accuracy, dsc = model.evaluate(test_images, test_masks)
 
 print(f"Loss: {loss}")
 print(f"Accuracy: {accuracy}")
 
+print(f"F1/DSC: {dsc}")
+# print(f"Precision: {precision}")
+# print(f"Recall: {recall}")
+
+
+# Predictions
 
 predictions = model.predict(test_images)
+y_pred_bool = np.argmax(predictions, axis=1)
 
-print(f"Predictions: {np.argmax(predictions, axis=-1)}")
+print(f"y_pred_bool: {y_pred_bool}\n\nLabels: {test_masks}")
+
+print(f"DSC: {dice_coef(test_masks, y_pred_bool)}")
+
+# print(classification_report(test_masks, y_pred_bool))
+print(f"Predictions: {y_pred_bool}\n\n One line: {y_pred_bool[0][0]}")
 
 # Plot Predictions
 fig, axes = plt.subplots(5,5, figsize = (10,10))
