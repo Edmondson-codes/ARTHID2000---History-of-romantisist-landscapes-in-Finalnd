@@ -17,8 +17,8 @@ import tensorflow as tf
 
 batch_size = 64
 INPUT_SHAPE = (32, 32, 3)
-lbls = ['Airplane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog',
-                'Frog', 'Horse', 'Ship', 'Truck']
+lbls = ['Airplane', 'Car', 'Bird', 'Cat', 'Deer',
+        'Dog', 'Frog', 'Horse', 'Ship', 'Truck']
 
 
 # ==================== Get Data ====================
@@ -32,20 +32,6 @@ print(f"X_train: {X_train.shape}") # 50000, 32, 32, 3
 print(f"y_train: {y_train.shape}") # 50000, 1
 print(f"X_test: {X_test.shape}")   # 10000, 32, 32, 3
 print(f"y_test: {y_test.shape}")   # 10000, 1
-
-# Plot images
-fig, axes = plt.subplots(5,5, figsize = (10,10))
-axes = axes.ravel()
-for i in np.arange(0, 5*5):
-    idx = np.random.randint(0, len(X_train))
-    axes[i].imshow(X_train[idx,1:])
-    lbl_idx = int(y_train[idx])
-    axes[i].set_title(lbls[lbl_idx], fontsize = 8)
-    axes[i].axis('off')
-
-plt.subplots_adjust(hspace=0.4)
-
-# plt.show()
 
 
 # ==================== Preprocess Data ====================
@@ -116,6 +102,7 @@ history = model.fit(train_generator, epochs=6,
 
 # ==================== Model eval ====================
 
+## Loss & Accuracy
 plt.figure(figsize=(12, 16))
 
 plt.subplot(4, 2, 1)
